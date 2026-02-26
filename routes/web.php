@@ -27,6 +27,10 @@ Route::prefix('admin')
             Route::get('/loan-applications', [AdminLoanApplicationController::class, 'index'])
                 ->middleware('permission:view applications')
                 ->name('loan-applications.index');
+            Route::get('/loan-applications/export/{format}', [AdminLoanApplicationController::class, 'export'])
+                ->whereIn('format', ['csv', 'xlsx'])
+                ->middleware('permission:export reports')
+                ->name('loan-applications.export');
             Route::get('/loan-applications/{loanApplication}', [AdminLoanApplicationController::class, 'show'])
                 ->middleware('permission:view applications')
                 ->name('loan-applications.show');

@@ -73,10 +73,104 @@
             </article>
         </section>
 
+        <section class="admin-chart-grid">
+            <article class="admin-card admin-chart-card">
+                <h2 class="admin-section-title">Applications Per Month (Last 12 Months)</h2>
+                <p class="admin-muted">Monthly submission trend for reporting and operational planning.</p>
+                <div class="admin-chart-wrap">
+                    <canvas id="applicationsPerMonthChart" aria-label="Applications per month chart" role="img"></canvas>
+                </div>
+            </article>
+
+            <article class="admin-card admin-chart-card">
+                <h2 class="admin-section-title">Risk Distribution</h2>
+                <p class="admin-muted">Current split of high-risk and low-risk applications.</p>
+                <div class="admin-chart-wrap">
+                    <canvas id="riskDistributionChart" aria-label="Risk distribution chart" role="img"></canvas>
+                </div>
+            </article>
+        </section>
+
         <article class="admin-card">
             <div class="home-actions">
                 <a href="{{ route('admin.loan-applications.index') }}" class="btn-primary">Review Applications</a>
             </div>
         </article>
     </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.Chart === 'undefined') {
+                return;
+            }
+
+            const monthlyChartData = @json($monthlyApplicationsChart);
+            const riskChartData = @json($riskDistributionChart);
+
+            const monthlyCanvas = document.getElementById('applicationsPerMonthChart');
+            if (monthlyCanvas) {
+                new window.Chart(monthlyCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: monthlyChartData.labels,
+                        datasets: [{
+                            label: 'Applications',
+                            data: monthlyChartData.series,
+                            borderColor: '#016aac',
+                            backgroundColor: 'rgba(1, 106, 172, 0.14)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#245a7c',
+                            pointHoverRadius: 4,
+                            tension: 0.25,
+                            fill: true,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                            },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0,
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            const riskCanvas = document.getElementById('riskDistributionChart');
+            if (riskCanvas) {
+                new window.Chart(riskCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: riskChartData.labels,
+                        datasets: [{
+                            data: riskChartData.series,
+                            backgroundColor: ['#245a7c', '#a8c930'],
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                        },
+                    },
+                });
+            }
+        });
+    </script>
 @endsection

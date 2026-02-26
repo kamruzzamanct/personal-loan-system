@@ -529,6 +529,7 @@ main {
 .admin-filter-actions {
     display: flex;
     gap: 0.6rem;
+    flex-wrap: wrap;
 }
 
 .admin-table-wrap {
@@ -888,6 +889,22 @@ main {
     gap: 1rem;
 }
 
+.admin-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.admin-chart-card .admin-muted {
+    margin-top: 0.45rem;
+}
+
+.admin-chart-wrap {
+    margin-top: 0.7rem;
+    height: 280px;
+    min-height: 220px;
+}
+
 .admin-header-inline {
     display: flex;
     justify-content: space-between;
@@ -1043,6 +1060,10 @@ main {
     }
 
     .admin-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-chart-grid {
         grid-template-columns: 1fr;
     }
 

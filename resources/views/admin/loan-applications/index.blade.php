@@ -43,6 +43,20 @@
                 <div class="admin-filter-actions">
                     <button type="submit" class="btn-primary">Apply Filters</button>
                     <a href="{{ route('admin.loan-applications.index') }}" class="btn-secondary">Reset</a>
+                    @can('export reports')
+                        <a
+                            href="{{ route('admin.loan-applications.export', array_merge(['format' => 'csv'], $filters)) }}"
+                            class="btn-secondary"
+                        >
+                            Export CSV
+                        </a>
+                        <a
+                            href="{{ route('admin.loan-applications.export', array_merge(['format' => 'xlsx'], $filters)) }}"
+                            class="btn-secondary"
+                        >
+                            Export Excel
+                        </a>
+                    @endcan
                 </div>
             </form>
         </article>

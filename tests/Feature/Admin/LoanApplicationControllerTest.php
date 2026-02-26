@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
+use App\Exports\LoanApplicationsExport;
 use App\Enums\AdminRole;
 use App\Enums\EmploymentType;
 use App\Enums\LoanApplicationStatus;
@@ -14,7 +15,9 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class LoanApplicationControllerTest extends TestCase
@@ -232,6 +235,84 @@ class LoanApplicationControllerTest extends TestCase
         $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
         $response->assertSessionHas('success', 'Loan application is already approved.');
         Queue::assertNotPushed(SendLoanApprovedNotificationJob::class);
+    }
+
+    public function test_export_csv_downloads_filtered_results_for_authorized_user(): void
+    {
+        Carbon::setTestNow('2026-02-26 14:05:06');
+        Excel::fake();
+        $this->actingAsRiskManager();
+
+        LoanApplication::factory()->create([
+            'risk_level' => RiskLevel::High->value,
+            'email' => 'high-risk-export@example.com',
+        ]);
+
+        LoanApplication::factory()->create([
+            'risk_level' => RiskLevel::Low->value,
+            'email' => 'low-risk-export@example.com',
+        ]);
+
+        $response = $this->get(route('admin.loan-applications.export', [
+            'format' => 'csv',
+            'risk_level' => RiskLevel::High->value,
+        ]));
+
+        $response->assertOk();
+        Excel::assertDownloaded('loan-applications-20260226_140506.csv', function (LoanApplicationsExport $export): bool {
+            return in_array(RiskLevel::High->value, $export->query()->getBindings(), true);
+        });
+
+        Carbon::setTestNow();
+    }
+
+    public function test_export_xlsx_downloads_with_search_and_employment_filters(): void
+    {
+        Carbon::setTestNow('2026-02-26 14:10:10');
+        Excel::fake();
+        $this->actingAsAdmin();
+
+        LoanApplication::factory()->create([
+            'first_name' => 'Unique',
+            'employment_type' => EmploymentType::SelfEmployed->value,
+            'is_self_employed' => true,
+            'email' => 'unique-self@example.com',
+        ]);
+
+        LoanApplication::factory()->create([
+            'first_name' => 'Other',
+            'employment_type' => EmploymentType::Salaried->value,
+            'is_self_employed' => false,
+            'email' => 'other-salaried@example.com',
+        ]);
+
+        $response = $this->get(route('admin.loan-applications.export', [
+            'format' => 'xlsx',
+            'search' => 'Unique',
+            'employment_type' => EmploymentType::SelfEmployed->value,
+        ]));
+
+        $response->assertOk();
+        Excel::assertDownloaded('loan-applications-20260226_141010.xlsx', function (LoanApplicationsExport $export): bool {
+            $bindings = $export->query()->getBindings();
+
+            return in_array('%Unique%', $bindings, true)
+                && in_array(EmploymentType::SelfEmployed->value, $bindings, true);
+        });
+
+        Carbon::setTestNow();
+    }
+
+    public function test_export_returns_forbidden_for_user_without_export_permission(): void
+    {
+        Excel::fake();
+        $this->actingAsViewer();
+
+        $response = $this->get(route('admin.loan-applications.export', [
+            'format' => 'csv',
+        ]));
+
+        $response->assertForbidden();
     }
 
     private function actingAsAdmin(): User
