@@ -23,6 +23,8 @@ class LoanApplicationController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', LoanApplication::class);
+
         $filters = $this->filtersFromRequest($request);
 
         $loanApplications = $this->filteredQuery($request, $filters)
@@ -38,6 +40,8 @@ class LoanApplicationController extends Controller
 
     public function export(Request $request, string $format): BinaryFileResponse
     {
+        $this->authorize('export', LoanApplication::class);
+
         $filters = $this->filtersFromRequest($request);
 
         $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
@@ -64,24 +68,20 @@ class LoanApplicationController extends Controller
      */
     private function authorizeFilters(Request $request, array $filters): void
     {
-        $user = $request->user();
         $search = $filters['search'];
         $riskLevel = $filters['risk_level'];
         $employmentType = $filters['employment_type'];
 
-        if (($search !== '' || $employmentType !== '') && ! $user?->can('filter applications')) {
-            abort(403, 'You do not have permission to filter applications.');
+        if ($search !== '' || $employmentType !== '') {
+            $this->authorize('filter', LoanApplication::class);
         }
 
-        if ($riskLevel === RiskLevel::Low->value && ! $user?->can('filter applications')) {
-            abort(403, 'You do not have permission to filter low-risk applications.');
+        if ($riskLevel === RiskLevel::Low->value) {
+            $this->authorize('filter', LoanApplication::class);
         }
 
-        if (
-            $riskLevel === RiskLevel::High->value
-            && ! $user?->canAny(['filter applications', 'view high-risk only'])
-        ) {
-            abort(403, 'You do not have permission to view high-risk applications.');
+        if ($riskLevel === RiskLevel::High->value) {
+            $this->authorize('viewHighRisk', LoanApplication::class);
         }
     }
 
@@ -125,6 +125,8 @@ class LoanApplicationController extends Controller
 
     public function show(LoanApplication $loanApplication): View
     {
+        $this->authorize('view', $loanApplication);
+
         $loanApplication->loadMissing('approvedByUser');
 
         return view('admin.loan-applications.show', [
@@ -134,6 +136,8 @@ class LoanApplicationController extends Controller
 
     public function approve(Request $request, LoanApplication $loanApplication): RedirectResponse
     {
+        $this->authorize('approve', $loanApplication);
+
         $status = $loanApplication->status instanceof LoanApplicationStatus
             ? $loanApplication->status->value
             : (string) $loanApplication->status;
