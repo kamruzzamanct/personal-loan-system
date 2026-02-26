@@ -6,16 +6,27 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\AdminRole;
 use App\Enums\EmploymentType;
+use App\Enums\LoanApplicationStatus;
 use App\Enums\RiskLevel;
+use App\Jobs\SendLoanApprovedNotificationJob;
 use App\Models\LoanApplication;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class LoanApplicationControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
 
     public function test_index_displays_paginated_results_ordered_by_latest(): void
     {
@@ -151,11 +162,108 @@ class LoanApplicationControllerTest extends TestCase
         $response->assertSee('page=2', false);
     }
 
+    public function test_show_displays_single_application_details(): void
+    {
+        $this->actingAsAdmin();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'email' => 'single-details@example.com',
+        ]);
+
+        $response = $this->get(route('admin.loan-applications.show', $loanApplication));
+
+        $response->assertOk();
+        $response->assertSee('Loan Application Details');
+        $response->assertSee('single-details@example.com');
+    }
+
+    public function test_approve_updates_application_and_dispatches_customer_notification_job(): void
+    {
+        Queue::fake();
+        $approver = $this->actingAsRiskManager();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Pending->value,
+            'approved_at' => null,
+            'approved_by_user_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.approve', $loanApplication));
+
+        $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $response->assertSessionHas('success', 'Loan application approved successfully. Applicant notification is queued.');
+
+        $loanApplication->refresh();
+
+        $this->assertSame(LoanApplicationStatus::Approved, $loanApplication->status);
+        $this->assertNotNull($loanApplication->approved_at);
+        $this->assertSame($approver->id, $loanApplication->approved_by_user_id);
+
+        Queue::assertPushed(SendLoanApprovedNotificationJob::class, function (SendLoanApprovedNotificationJob $job) use ($loanApplication): bool {
+            return $job->loanApplication->id === $loanApplication->id;
+        });
+    }
+
+    public function test_approve_returns_forbidden_for_viewer_without_permission(): void
+    {
+        $this->actingAsViewer();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Pending->value,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.approve', $loanApplication));
+
+        $response->assertForbidden();
+    }
+
+    public function test_approve_does_not_dispatch_job_for_already_approved_application(): void
+    {
+        Queue::fake();
+        $this->actingAsAdmin();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Approved->value,
+            'approved_at' => now()->subDay(),
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.approve', $loanApplication));
+
+        $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $response->assertSessionHas('success', 'Loan application is already approved.');
+        Queue::assertNotPushed(SendLoanApprovedNotificationJob::class);
+    }
+
     private function actingAsAdmin(): User
     {
         $user = User::factory()->create([
             'role' => AdminRole::SuperAdmin->value,
         ]);
+        $user->assignRole('Super Admin');
+
+        $this->actingAs($user);
+
+        return $user;
+    }
+
+    private function actingAsRiskManager(): User
+    {
+        $user = User::factory()->create([
+            'role' => AdminRole::RiskManager->value,
+        ]);
+        $user->assignRole('Risk Manager');
+
+        $this->actingAs($user);
+
+        return $user;
+    }
+
+    private function actingAsViewer(): User
+    {
+        $user = User::factory()->create([
+            'role' => AdminRole::Viewer->value,
+        ]);
+        $user->assignRole('Viewer');
 
         $this->actingAs($user);
 

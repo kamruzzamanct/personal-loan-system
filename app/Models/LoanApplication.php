@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EmploymentType;
+use App\Enums\LoanApplicationStatus;
 use App\Enums\RiskLevel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class LoanApplication extends Model
@@ -30,6 +32,9 @@ class LoanApplication extends Model
         'consent',
         'risk_level',
         'is_self_employed',
+        'status',
+        'approved_at',
+        'approved_by_user_id',
     ];
 
     /**
@@ -46,7 +51,14 @@ class LoanApplication extends Model
             'consent' => 'boolean',
             'risk_level' => RiskLevel::class,
             'is_self_employed' => 'boolean',
+            'status' => LoanApplicationStatus::class,
+            'approved_at' => 'datetime',
         ];
+    }
+
+    public function approvedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
     }
 
     public function scopeHighRisk(Builder $query): Builder
@@ -67,5 +79,15 @@ class LoanApplication extends Model
     public function scopeSelfEmployed(Builder $query): Builder
     {
         return $query->where('employment_type', EmploymentType::SelfEmployed->value);
+    }
+
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->where('status', LoanApplicationStatus::Approved->value);
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->where('status', LoanApplicationStatus::Pending->value);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Enums\AdminRole;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,13 @@ use Tests\TestCase;
 class AdminAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
 
     public function test_login_page_is_accessible_for_guests(): void
     {
@@ -29,6 +37,7 @@ class AdminAuthControllerTest extends TestCase
             'password' => Hash::make('secret123'),
             'role' => AdminRole::SuperAdmin->value,
         ]);
+        $user->assignRole('Super Admin');
 
         $response = $this->from(route('admin.login'))->post(route('admin.login.store'), [
             'email' => 'admin@example.com',
@@ -80,6 +89,7 @@ class AdminAuthControllerTest extends TestCase
         $user = User::factory()->create([
             'role' => AdminRole::RiskManager->value,
         ]);
+        $user->assignRole('Risk Manager');
 
         $response = $this->actingAs($user)->post(route('admin.logout'));
 

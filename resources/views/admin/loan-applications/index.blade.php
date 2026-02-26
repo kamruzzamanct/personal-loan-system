@@ -59,7 +59,9 @@
                             <th>Monthly Income</th>
                             <th>Employment</th>
                             <th>Risk</th>
+                            <th>Status</th>
                             <th>Submitted</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,6 +74,10 @@
                                 $riskLevel = $loanApplication->risk_level instanceof \BackedEnum
                                     ? $loanApplication->risk_level->value
                                     : (string) $loanApplication->risk_level;
+
+                                $status = $loanApplication->status instanceof \BackedEnum
+                                    ? $loanApplication->status->value
+                                    : (string) $loanApplication->status;
                             @endphp
                             <tr>
                                 <td>{{ $loanApplication->first_name }} {{ $loanApplication->last_name }}</td>
@@ -85,11 +91,21 @@
                                         {{ strtoupper($riskLevel) }}
                                     </span>
                                 </td>
+                                <td>
+                                    <span class="status-pill {{ $status === 'approved' ? 'status-approved' : 'status-pending' }}">
+                                        {{ strtoupper($status) }}
+                                    </span>
+                                </td>
                                 <td>{{ $loanApplication->created_at?->format('Y-m-d H:i') }}</td>
+                                <td>
+                                    <a href="{{ route('admin.loan-applications.show', $loanApplication) }}" class="table-action-link">
+                                        View Details
+                                    </a>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="admin-empty">No applications found for the selected filters.</td>
+                                <td colspan="10" class="admin-empty">No applications found for the selected filters.</td>
                             </tr>
                         @endforelse
                     </tbody>

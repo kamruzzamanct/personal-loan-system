@@ -25,7 +25,14 @@ Route::prefix('admin')
         Route::middleware(['auth', 'admin.role'])->group(function (): void {
             Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
             Route::get('/loan-applications', [AdminLoanApplicationController::class, 'index'])
+                ->middleware('permission:view applications')
                 ->name('loan-applications.index');
+            Route::get('/loan-applications/{loanApplication}', [AdminLoanApplicationController::class, 'show'])
+                ->middleware('permission:view applications')
+                ->name('loan-applications.show');
+            Route::post('/loan-applications/{loanApplication}/approve', [AdminLoanApplicationController::class, 'approve'])
+                ->middleware('permission:approve applications')
+                ->name('loan-applications.approve');
             Route::post('/logout', [AdminAuthController::class, 'destroy'])->name('logout');
         });
     });

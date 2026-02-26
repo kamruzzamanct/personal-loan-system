@@ -15,6 +15,10 @@
                 <strong>{{ number_format($totalApplications) }}</strong>
             </article>
             <article class="admin-stat-card">
+                <p>Approved Loans</p>
+                <strong>{{ number_format($approvedLoans) }}</strong>
+            </article>
+            <article class="admin-stat-card">
                 <p>High Risk Applications</p>
                 <strong>{{ number_format($highRiskApplications) }}</strong>
             </article>

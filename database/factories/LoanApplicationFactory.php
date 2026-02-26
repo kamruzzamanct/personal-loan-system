@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\EmploymentType;
+use App\Enums\LoanApplicationStatus;
 use App\Enums\RiskLevel;
 use App\Models\LoanApplication;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -37,6 +38,9 @@ class LoanApplicationFactory extends Factory
             'consent' => true,
             'risk_level' => RiskLevel::Low->value,
             'is_self_employed' => $employmentType === EmploymentType::SelfEmployed->value,
+            'status' => LoanApplicationStatus::Pending->value,
+            'approved_at' => null,
+            'approved_by_user_id' => null,
         ];
     }
 }
