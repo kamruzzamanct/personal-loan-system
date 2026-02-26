@@ -45,7 +45,7 @@ class AdminAuthControllerTest extends TestCase
         ]);
 
         $response->assertRedirect(route('admin.dashboard'));
-        $this->assertAuthenticatedAs($user);
+        $this->assertAuthenticatedAs($user, 'admin');
     }
 
     public function test_non_admin_user_is_rejected_after_login_attempt(): void
@@ -63,7 +63,7 @@ class AdminAuthControllerTest extends TestCase
 
         $response->assertRedirect(route('admin.login'));
         $response->assertSessionHasErrors('email');
-        $this->assertGuest();
+        $this->assertGuest('admin');
     }
 
     public function test_admin_routes_require_authentication(): void
@@ -79,7 +79,7 @@ class AdminAuthControllerTest extends TestCase
             'role' => AdminRole::Customer->value,
         ]);
 
-        $response = $this->actingAs($user)->get(route('admin.dashboard'));
+        $response = $this->actingAs($user, 'admin')->get(route('admin.dashboard'));
 
         $response->assertForbidden();
     }
@@ -91,9 +91,33 @@ class AdminAuthControllerTest extends TestCase
         ]);
         $user->assignRole('Risk Manager');
 
-        $response = $this->actingAs($user)->post(route('admin.logout'));
+        $response = $this->actingAs($user, 'admin')->post(route('admin.logout'));
 
         $response->assertRedirect(route('admin.login'));
-        $this->assertGuest();
+        $this->assertGuest('admin');
+    }
+
+    public function test_authenticated_applicant_can_open_admin_login_page(): void
+    {
+        $applicant = User::factory()->create([
+            'role' => AdminRole::Customer->value,
+        ]);
+
+        $response = $this->actingAs($applicant)->get(route('admin.login'));
+
+        $response->assertOk();
+        $response->assertSeeText('Admin Login');
+    }
+
+    public function test_authenticated_admin_is_redirected_from_admin_login_to_dashboard(): void
+    {
+        $admin = User::factory()->create([
+            'role' => AdminRole::SuperAdmin->value,
+        ]);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->actingAs($admin, 'admin')->get(route('admin.login'));
+
+        $response->assertRedirect(route('admin.dashboard'));
     }
 }

@@ -28,6 +28,7 @@ class LoanApplicationFactory extends Factory
         ]);
 
         return [
+            'user_id' => null,
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'email' => $this->faker->unique()->safeEmail(),

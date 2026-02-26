@@ -322,7 +322,7 @@ class LoanApplicationControllerTest extends TestCase
         ]);
         $user->assignRole('Super Admin');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }
@@ -334,7 +334,7 @@ class LoanApplicationControllerTest extends TestCase
         ]);
         $user->assignRole('Risk Manager');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }
@@ -346,7 +346,7 @@ class LoanApplicationControllerTest extends TestCase
         ]);
         $user->assignRole('Viewer');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }

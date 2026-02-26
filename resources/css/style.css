@@ -103,6 +103,27 @@ a {
     background: rgba(1, 106, 172, 0.08);
 }
 
+.site-nav-logout-form {
+    margin: 0;
+}
+
+.site-nav-logout-btn {
+    border: 0;
+    background: transparent;
+    color: var(--text-soft);
+    font: inherit;
+    font-weight: 500;
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.site-nav-logout-btn:hover {
+    color: var(--brand-primary);
+    background: rgba(1, 106, 172, 0.08);
+}
+
 .menu-action {
     display: inline-flex;
     align-items: center;
@@ -694,6 +715,17 @@ main {
     color: #4f6f85;
 }
 
+.auth-switch-link {
+    margin: 0.8rem 0 0;
+    color: #56758b;
+    font-size: 0.92rem;
+}
+
+.auth-switch-link a {
+    color: #016aac;
+    font-weight: 700;
+}
+
 .admin-auth-form {
     display: grid;
     gap: 0.75rem;
@@ -1144,7 +1176,8 @@ main {
         gap: 0.2rem;
     }
 
-    .site-nav a {
+    .site-nav a,
+    .site-nav-logout-btn {
         padding: 0.75rem 0.6rem;
     }
 }

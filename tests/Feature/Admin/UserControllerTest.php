@@ -106,7 +106,7 @@ class UserControllerTest extends TestCase
             ->where('role', AdminRole::SuperAdmin->value)
             ->firstOrFail();
         $superAdmin->syncRoles(['Super Admin']);
-        $this->actingAs($superAdmin);
+        $this->actingAs($superAdmin, 'admin');
 
         $response = $this->from(route('admin.users.edit', $superAdmin))
             ->put(route('admin.users.update', $superAdmin), [
@@ -164,7 +164,7 @@ class UserControllerTest extends TestCase
         ]);
         $user->assignRole('Super Admin');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }
@@ -176,7 +176,7 @@ class UserControllerTest extends TestCase
         ]);
         $user->assignRole('Viewer');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }

@@ -24,14 +24,31 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(static function (Request $request): string {
-            return route('admin.login');
+            if ($request->is('admin/*')) {
+                return route('admin.login');
+            }
+
+            return route('applicant.login');
         });
 
         $middleware->redirectUsersTo(static function (Request $request): string {
-            $user = $request->user();
-
-            if ($user && method_exists($user, 'hasAdminRole') && $user->hasAdminRole()) {
+            $adminUser = auth('admin')->user();
+            if (
+                $adminUser
+                && method_exists($adminUser, 'hasAdminRole')
+                && $adminUser->hasAdminRole()
+                && $request->is('admin/*')
+            ) {
                 return route('admin.dashboard');
+            }
+
+            $webUser = auth('web')->user();
+            if ($webUser && method_exists($webUser, 'hasAdminRole') && $webUser->hasAdminRole()) {
+                return route('admin.dashboard');
+            }
+
+            if ($webUser) {
+                return route('applicant.dashboard');
             }
 
             return route('home');

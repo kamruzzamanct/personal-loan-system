@@ -22,6 +22,7 @@ class LoanApplication extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'user_id',
         'first_name',
         'last_name',
         'email',
@@ -59,6 +60,11 @@ class LoanApplication extends Model
     public function approvedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
+
+    public function applicantUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function scopeHighRisk(Builder $query): Builder

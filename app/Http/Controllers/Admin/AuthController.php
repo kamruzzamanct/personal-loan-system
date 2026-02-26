@@ -13,8 +13,14 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        $user = Auth::guard('admin')->user();
+
+        if ($user && method_exists($user, 'hasAdminRole') && $user->hasAdminRole()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return view('admin.auth.login');
     }
 
@@ -22,7 +28,7 @@ class AuthController extends Controller
     {
         $credentials = $request->safe()->only(['email', 'password']);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors([
                     'email' => 'These credentials do not match our records.',
@@ -32,12 +38,11 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        $user = $request->user();
+        $user = Auth::guard('admin')->user();
 
         if (! $user || ! $user->hasAdminRole()) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            Auth::guard('admin')->logout();
+            $request->session()->regenerate();
 
             return back()
                 ->withErrors([
@@ -51,10 +56,8 @@ class AuthController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        Auth::guard('admin')->logout();
+        $request->session()->regenerate();
 
         return redirect()
             ->route('admin.login')

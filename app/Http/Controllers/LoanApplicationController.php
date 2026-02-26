@@ -25,6 +25,12 @@ class LoanApplicationController extends Controller
         LoanRiskService $loanRiskService,
     ): JsonResponse|RedirectResponse {
         $validated = $request->validated();
+        $user = $request->user();
+        $userId = null;
+
+        if ($user && strcasecmp((string) $user->email, (string) $validated['email']) === 0) {
+            $userId = $user->id;
+        }
 
         $riskLevel = $loanRiskService->calculateRisk(
             (float) $validated['loan_amount'],
@@ -33,6 +39,7 @@ class LoanApplicationController extends Controller
 
         $loanApplication = LoanApplication::query()->create([
             ...$validated,
+            'user_id' => $userId,
             'risk_level' => $riskLevel,
             'is_self_employed' => $loanRiskService->isSelfEmployed($validated['employment_type']),
         ]);

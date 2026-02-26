@@ -111,7 +111,7 @@ class DashboardControllerTest extends TestCase
         ]);
         $user->assignRole('Super Admin');
 
-        $this->actingAs($user);
+        $this->actingAs($user, 'admin');
 
         return $user;
     }

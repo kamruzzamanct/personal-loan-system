@@ -16,7 +16,8 @@
 <body>
     @php
         $authenticatedUser = auth()->user();
-        $adminLink = $authenticatedUser && method_exists($authenticatedUser, 'hasAdminRole') && $authenticatedUser->hasAdminRole()
+        $isAdminUser = $authenticatedUser && method_exists($authenticatedUser, 'hasAdminRole') && $authenticatedUser->hasAdminRole();
+        $adminLink = $isAdminUser
             ? route('admin.dashboard')
             : route('admin.login');
     @endphp
@@ -36,8 +37,21 @@
                 <nav class="site-nav" aria-label="Main menu">
                     <a href="{{ route('home') }}">Home</a>
                     <a href="{{ route('loan-applications.create') }}">Apply</a>
+                    @if ($authenticatedUser && ! $isAdminUser)
+                        <a href="{{ route('applicant.dashboard') }}">My Dashboard</a>
+                    @endif
+                    @guest
+                        <a href="{{ route('applicant.login') }}">Login</a>
+                        <a href="{{ route('applicant.register') }}">Register</a>
+                    @endguest
                     <a href="{{ route('home') }}#benefits">Benefits</a>
                     <a href="{{ route('home') }}#faq">FAQ</a>
+                    @auth
+                        <form method="POST" action="{{ route('applicant.logout') }}" class="site-nav-logout-form">
+                            @csrf
+                            <button type="submit" class="site-nav-logout-btn">Logout</button>
+                        </form>
+                    @endauth
                 </nav>
             </div>
 
