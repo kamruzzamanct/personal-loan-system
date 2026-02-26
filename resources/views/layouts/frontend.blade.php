@@ -14,6 +14,13 @@
     @endif
 </head>
 <body>
+    @php
+        $authenticatedUser = auth()->user();
+        $adminLink = $authenticatedUser && method_exists($authenticatedUser, 'hasAdminRole') && $authenticatedUser->hasAdminRole()
+            ? route('admin.dashboard')
+            : route('admin.login');
+    @endphp
+
     <header class="site-header">
         <div class="site-shell site-header-inner">
             <a href="{{ route('home') }}" class="brand">
@@ -29,6 +36,7 @@
                 <nav class="site-nav" aria-label="Main menu">
                     <a href="{{ route('home') }}">Home</a>
                     <a href="{{ route('loan-applications.create') }}">Apply</a>
+                    <a href="{{ $adminLink }}">Admin</a>
                     <a href="{{ route('home') }}#benefits">Benefits</a>
                     <a href="{{ route('home') }}#faq">FAQ</a>
                 </nav>
