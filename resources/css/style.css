@@ -532,6 +532,13 @@ main {
     flex-wrap: wrap;
 }
 
+.admin-users-search-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.7rem;
+    align-items: end;
+}
+
 .admin-table-wrap {
     max-width: 100%;
     overflow-x: auto;
@@ -615,6 +622,41 @@ main {
 
 .table-action-link:hover {
     text-decoration: underline;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.admin-inline-form {
+    display: inline;
+}
+
+.btn-danger-outline {
+    border: 1px solid #f0b8c0;
+    background: #fff4f6;
+    color: #a12a39;
+    border-radius: 10px;
+    min-height: 32px;
+    padding: 0 0.65rem;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.admin-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.6rem;
 }
 
 .admin-empty {
@@ -1055,6 +1097,10 @@ main {
         grid-column: 1 / -1;
     }
 
+    .admin-users-search-form {
+        grid-template-columns: 1fr;
+    }
+
     .admin-stat-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -1111,6 +1157,10 @@ main {
     }
 
     .admin-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-form-grid {
         grid-template-columns: 1fr;
     }
 

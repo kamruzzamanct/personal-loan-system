@@ -24,7 +24,7 @@
     <header class="site-header">
         <div class="site-shell site-header-inner">
             <a href="{{ route('home') }}" class="brand">
-                <span class="brand-mark">PL</span>
+                <span class="brand-mark">PLS</span>
                 <span>Personal Loan System</span>
             </a>
 
@@ -36,7 +36,6 @@
                 <nav class="site-nav" aria-label="Main menu">
                     <a href="{{ route('home') }}">Home</a>
                     <a href="{{ route('loan-applications.create') }}">Apply</a>
-                    <a href="{{ $adminLink }}">Admin</a>
                     <a href="{{ route('home') }}#benefits">Benefits</a>
                     <a href="{{ route('home') }}#faq">FAQ</a>
                 </nav>

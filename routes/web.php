@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\LoanApplicationController as AdminLoanApplicationController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\LoanApplicationController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,9 @@ Route::prefix('admin')
             Route::post('/loan-applications/{loanApplication}/approve', [AdminLoanApplicationController::class, 'approve'])
                 ->middleware('permission:approve applications')
                 ->name('loan-applications.approve');
+            Route::resource('/users', AdminUserController::class)
+                ->except(['show'])
+                ->middleware('permission:manage users');
             Route::post('/logout', [AdminAuthController::class, 'destroy'])->name('logout');
         });
     });
