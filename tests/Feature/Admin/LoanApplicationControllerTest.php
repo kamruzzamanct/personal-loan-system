@@ -171,6 +171,13 @@ class LoanApplicationControllerTest extends TestCase
 
         $loanApplication = LoanApplication::factory()->create([
             'email' => 'single-details@example.com',
+            'age' => 33,
+            'address' => '88 River Road, Dallas',
+            'employment_type' => EmploymentType::Salaried->value,
+            'is_self_employed' => false,
+            'designation' => 'Finance Manager',
+            'company_name' => 'Corebank Ltd',
+            'loan_proposal' => 'Need funds to expand home-based catering operations.',
         ]);
 
         $response = $this->get(route('admin.loan-applications.show', $loanApplication));
@@ -178,6 +185,11 @@ class LoanApplicationControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('Loan Application Details');
         $response->assertSee('single-details@example.com');
+        $response->assertSee('33');
+        $response->assertSee('88 River Road, Dallas');
+        $response->assertSee('Finance Manager');
+        $response->assertSee('Corebank Ltd');
+        $response->assertSee('Need funds to expand home-based catering operations.');
     }
 
     public function test_approve_updates_application_and_dispatches_customer_notification_job(): void
@@ -218,6 +230,77 @@ class LoanApplicationControllerTest extends TestCase
         $response = $this->post(route('admin.loan-applications.approve', $loanApplication));
 
         $response->assertForbidden();
+    }
+
+    public function test_mark_under_review_updates_application_status(): void
+    {
+        $this->actingAsRiskManager();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Pending->value,
+            'approved_at' => null,
+            'approved_by_user_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.under-review', $loanApplication));
+
+        $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $response->assertSessionHas('success', 'Loan application status updated to under review.');
+
+        $loanApplication->refresh();
+
+        $this->assertSame(LoanApplicationStatus::UnderReview, $loanApplication->status);
+        $this->assertNull($loanApplication->approved_at);
+        $this->assertNull($loanApplication->approved_by_user_id);
+    }
+
+    public function test_decline_updates_application_status(): void
+    {
+        $this->actingAsRiskManager();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Pending->value,
+            'approved_at' => null,
+            'approved_by_user_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.decline', $loanApplication));
+
+        $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $response->assertSessionHas('success', 'Loan application status updated to declined.');
+
+        $loanApplication->refresh();
+
+        $this->assertSame(LoanApplicationStatus::Declined, $loanApplication->status);
+        $this->assertNull($loanApplication->approved_at);
+        $this->assertNull($loanApplication->approved_by_user_id);
+    }
+
+    public function test_approved_application_cannot_be_moved_to_declined_or_under_review(): void
+    {
+        $this->actingAsAdmin();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'status' => LoanApplicationStatus::Approved->value,
+            'approved_at' => now(),
+            'approved_by_user_id' => null,
+        ]);
+
+        $declineResponse = $this->from(route('admin.loan-applications.show', $loanApplication))
+            ->post(route('admin.loan-applications.decline', $loanApplication));
+
+        $declineResponse->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $declineResponse->assertSessionHasErrors([
+            'status' => 'Approved applications cannot be moved to another status.',
+        ]);
+
+        $underReviewResponse = $this->from(route('admin.loan-applications.show', $loanApplication))
+            ->post(route('admin.loan-applications.under-review', $loanApplication));
+
+        $underReviewResponse->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $underReviewResponse->assertSessionHasErrors([
+            'status' => 'Approved applications cannot be moved to another status.',
+        ]);
     }
 
     public function test_approve_does_not_dispatch_job_for_already_approved_application(): void

@@ -15,6 +15,13 @@
         $status = $loanApplication->status instanceof \BackedEnum
             ? $loanApplication->status->value
             : (string) $loanApplication->status;
+
+        $statusClass = match ($status) {
+            'approved' => 'status-approved',
+            'under_review' => 'status-under-review',
+            'declined' => 'status-declined',
+            default => 'status-pending',
+        };
     @endphp
 
     <section class="admin-page">
@@ -44,8 +51,16 @@
                             <td>{{ $loanApplication->email }}</td>
                         </tr>
                         <tr>
+                            <th>Age</th>
+                            <td>{{ $loanApplication->age ?? 'Not provided' }}</td>
+                        </tr>
+                        <tr>
                             <th>Phone</th>
                             <td>{{ $loanApplication->phone }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address</th>
+                            <td>{{ $loanApplication->address ?: 'Not provided' }}</td>
                         </tr>
                         <tr>
                             <th>Loan Amount</th>
@@ -58,6 +73,26 @@
                         <tr>
                             <th>Employment Type</th>
                             <td>{{ ucwords(str_replace('_', ' ', $employmentType)) }}</td>
+                        </tr>
+                        @if ($employmentType === 'salaried')
+                            <tr>
+                                <th>Designation</th>
+                                <td>{{ $loanApplication->designation ?: 'Not provided' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Company Name</th>
+                                <td>{{ $loanApplication->company_name ?: 'Not provided' }}</td>
+                            </tr>
+                        @endif
+                        @if ($employmentType === 'self_employed')
+                            <tr>
+                                <th>What You Do for Living</th>
+                                <td>{{ $loanApplication->living_description ?: 'Not provided' }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th>Loan Proposal</th>
+                            <td class="admin-preline">{{ $loanApplication->loan_proposal ?: 'Not provided' }}</td>
                         </tr>
                         <tr>
                             <th>Self Employed Flag</th>
@@ -78,8 +113,8 @@
                     <span class="risk-pill {{ $riskLevel === 'high' ? 'risk-high' : 'risk-low' }}">
                         Risk: {{ strtoupper($riskLevel) }}
                     </span>
-                    <span class="status-pill {{ $status === 'approved' ? 'status-approved' : 'status-pending' }}">
-                        Status: {{ strtoupper($status) }}
+                    <span class="status-pill {{ $statusClass }}">
+                        Status: {{ strtoupper(str_replace('_', ' ', $status)) }}
                     </span>
                 </div>
 
@@ -100,18 +135,38 @@
                     </p>
                 @endif
 
-                @if ($status !== 'approved')
-                    @can('approve applications')
-                        <form action="{{ route('admin.loan-applications.approve', $loanApplication) }}" method="POST" class="admin-approve-form">
-                            @csrf
-                            <button type="submit" class="btn-primary">Approve Loan</button>
-                        </form>
-                    @else
-                        <p class="admin-muted">You do not have permission to approve applications.</p>
-                    @endcan
-                @else
-                    <p class="admin-muted">This application is already approved and the customer notification has been sent.</p>
+                @if ($errors->has('status'))
+                    <div class="alert alert-error">{{ $errors->first('status') }}</div>
                 @endif
+
+                @can('approve applications')
+                    @if ($status !== 'approved')
+                        <div class="admin-status-actions">
+                            @if ($status !== 'under_review')
+                                <form action="{{ route('admin.loan-applications.under-review', $loanApplication) }}" method="POST" class="admin-inline-form">
+                                    @csrf
+                                    <button type="submit" class="btn-secondary">Mark Under Review</button>
+                                </form>
+                            @endif
+
+                            @if ($status !== 'declined')
+                                <form action="{{ route('admin.loan-applications.decline', $loanApplication) }}" method="POST" class="admin-inline-form">
+                                    @csrf
+                                    <button type="submit" class="btn-danger-outline">Decline</button>
+                                </form>
+                            @endif
+
+                            <form action="{{ route('admin.loan-applications.approve', $loanApplication) }}" method="POST" class="admin-inline-form">
+                                @csrf
+                                <button type="submit" class="btn-primary">Approve Loan</button>
+                            </form>
+                        </div>
+                    @else
+                        <p class="admin-muted">This application is already approved and the customer notification has been sent.</p>
+                    @endif
+                @else
+                    <p class="admin-muted">You do not have permission to update application status.</p>
+                @endcan
             </article>
         </div>
     </section>

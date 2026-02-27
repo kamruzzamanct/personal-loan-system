@@ -27,15 +27,33 @@ class LoanApplicationFactory extends Factory
             EmploymentType::SelfEmployed->value,
         ]);
 
+        $designation = $employmentType === EmploymentType::Salaried->value
+            ? $this->faker->jobTitle()
+            : null;
+
+        $companyName = $employmentType === EmploymentType::Salaried->value
+            ? $this->faker->company()
+            : null;
+
+        $livingDescription = $employmentType === EmploymentType::SelfEmployed->value
+            ? $this->faker->sentence(8)
+            : null;
+
         return [
             'user_id' => null,
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'email' => $this->faker->unique()->safeEmail(),
+            'age' => $this->faker->numberBetween(20, 65),
             'phone' => $this->faker->numerify('##########'),
+            'address' => $this->faker->address(),
             'loan_amount' => $this->faker->randomFloat(2, 1000, 90000),
             'employment_type' => $employmentType,
+            'designation' => $designation,
+            'company_name' => $companyName,
+            'living_description' => $livingDescription,
             'monthly_income' => $this->faker->randomFloat(2, 1000, 50000),
+            'loan_proposal' => $this->faker->sentence(18),
             'consent' => true,
             'risk_level' => RiskLevel::Low->value,
             'is_self_employed' => $employmentType === EmploymentType::SelfEmployed->value,

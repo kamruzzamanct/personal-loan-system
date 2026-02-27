@@ -26,10 +26,16 @@ class LoanApplication extends Model
         'first_name',
         'last_name',
         'email',
+        'age',
         'phone',
+        'address',
         'loan_amount',
         'employment_type',
+        'designation',
+        'company_name',
+        'living_description',
         'monthly_income',
+        'loan_proposal',
         'consent',
         'risk_level',
         'is_self_employed',
@@ -95,5 +101,15 @@ class LoanApplication extends Model
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', LoanApplicationStatus::Pending->value);
+    }
+
+    public function scopeUnderReview(Builder $query): Builder
+    {
+        return $query->where('status', LoanApplicationStatus::UnderReview->value);
+    }
+
+    public function scopeDeclined(Builder $query): Builder
+    {
+        return $query->where('status', LoanApplicationStatus::Declined->value);
     }
 }

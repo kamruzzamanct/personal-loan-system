@@ -18,7 +18,7 @@ Route::middleware('guest:web')->group(function (): void {
     Route::post('/register', [ApplicantAuthController::class, 'storeRegister'])->name('applicant.register.store');
 });
 
-Route::get('/loan-applications/create', [LoanApplicationController::class, 'create'])
+Route::get('/loan-applications', [LoanApplicationController::class, 'create'])
     ->name('loan-applications.create');
 
 Route::post('/loan-applications', [LoanApplicationController::class, 'store'])
@@ -52,6 +52,12 @@ Route::prefix('admin')
             Route::post('/loan-applications/{loanApplication}/approve', [AdminLoanApplicationController::class, 'approve'])
                 ->middleware('permission:approve applications')
                 ->name('loan-applications.approve');
+            Route::post('/loan-applications/{loanApplication}/under-review', [AdminLoanApplicationController::class, 'markUnderReview'])
+                ->middleware('permission:approve applications')
+                ->name('loan-applications.under-review');
+            Route::post('/loan-applications/{loanApplication}/decline', [AdminLoanApplicationController::class, 'decline'])
+                ->middleware('permission:approve applications')
+                ->name('loan-applications.decline');
             Route::resource('/users', AdminUserController::class)
                 ->except(['show'])
                 ->middleware('permission:manage users');

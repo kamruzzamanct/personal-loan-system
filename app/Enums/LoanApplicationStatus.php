@@ -7,5 +7,7 @@ namespace App\Enums;
 enum LoanApplicationStatus: string
 {
     case Pending = 'pending';
+    case UnderReview = 'under_review';
     case Approved = 'approved';
+    case Declined = 'declined';
 }

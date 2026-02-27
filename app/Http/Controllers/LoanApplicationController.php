@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\EmploymentType;
 use App\Enums\RiskLevel;
 use App\Http\Requests\StoreLoanApplicationRequest;
 use App\Jobs\SendHighRiskLoanNotificationJob;
@@ -27,9 +28,17 @@ class LoanApplicationController extends Controller
         $validated = $request->validated();
         $user = $request->user();
         $userId = null;
+        $employmentType = (string) $validated['employment_type'];
 
         if ($user && strcasecmp((string) $user->email, (string) $validated['email']) === 0) {
             $userId = $user->id;
+        }
+
+        if ($employmentType === EmploymentType::Salaried->value) {
+            $validated['living_description'] = null;
+        } else {
+            $validated['designation'] = null;
+            $validated['company_name'] = null;
         }
 
         $riskLevel = $loanRiskService->calculateRisk(

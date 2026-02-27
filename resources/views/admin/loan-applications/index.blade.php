@@ -92,6 +92,13 @@
                                 $status = $loanApplication->status instanceof \BackedEnum
                                     ? $loanApplication->status->value
                                     : (string) $loanApplication->status;
+
+                                $statusClass = match ($status) {
+                                    'approved' => 'status-approved',
+                                    'under_review' => 'status-under-review',
+                                    'declined' => 'status-declined',
+                                    default => 'status-pending',
+                                };
                             @endphp
                             <tr>
                                 <td>{{ $loanApplication->first_name }} {{ $loanApplication->last_name }}</td>
@@ -106,8 +113,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="status-pill {{ $status === 'approved' ? 'status-approved' : 'status-pending' }}">
-                                        {{ strtoupper($status) }}
+                                    <span class="status-pill {{ $statusClass }}">
+                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
                                     </span>
                                 </td>
                                 <td>{{ $loanApplication->created_at?->format('Y-m-d H:i') }}</td>

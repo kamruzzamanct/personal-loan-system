@@ -36,6 +36,13 @@
                                 $status = $loanApplication->status instanceof \BackedEnum
                                     ? $loanApplication->status->value
                                     : (string) $loanApplication->status;
+
+                                $statusClass = match ($status) {
+                                    'approved' => 'status-approved',
+                                    'under_review' => 'status-under-review',
+                                    'declined' => 'status-declined',
+                                    default => 'status-pending',
+                                };
                             @endphp
                             <tr>
                                 <td>{{ (($loanApplications->currentPage() - 1) * $loanApplications->perPage()) + $loop->iteration }}</td>
@@ -43,8 +50,8 @@
                                 <td>{{ number_format((float) $loanApplication->monthly_income, 2) }}</td>
                                 <td>{{ ucwords(str_replace('_', ' ', $employmentType)) }}</td>
                                 <td>
-                                    <span class="status-pill {{ $status === 'approved' ? 'status-approved' : 'status-pending' }}">
-                                        {{ strtoupper($status) }}
+                                    <span class="status-pill {{ $statusClass }}">
+                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
                                     </span>
                                 </td>
                                 <td>{{ $loanApplication->created_at?->format('Y-m-d H:i') }}</td>

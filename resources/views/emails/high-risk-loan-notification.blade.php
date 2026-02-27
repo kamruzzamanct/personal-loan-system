@@ -32,8 +32,16 @@
                         <td style="border:1px solid #e1eaf1;">{{ $loanApplication->email }}</td>
                     </tr>
                     <tr>
+                        <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Age</td>
+                        <td style="border:1px solid #e1eaf1;">{{ $loanApplication->age ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
                         <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Phone</td>
                         <td style="border:1px solid #e1eaf1;">{{ $loanApplication->phone }}</td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Address</td>
+                        <td style="border:1px solid #e1eaf1;">{{ $loanApplication->address ?? 'N/A' }}</td>
                     </tr>
                     <tr>
                         <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Loan Amount</td>
@@ -46,6 +54,26 @@
                     <tr>
                         <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Employment Type</td>
                         <td style="border:1px solid #e1eaf1;">{{ ucwords(str_replace('_', ' ', $employmentType)) }}</td>
+                    </tr>
+                    @if ($employmentType === 'salaried')
+                        <tr>
+                            <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Designation</td>
+                            <td style="border:1px solid #e1eaf1;">{{ $loanApplication->designation ?: 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Company Name</td>
+                            <td style="border:1px solid #e1eaf1;">{{ $loanApplication->company_name ?: 'N/A' }}</td>
+                        </tr>
+                    @endif
+                    @if ($employmentType === 'self_employed')
+                        <tr>
+                            <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">What You Do for Living</td>
+                            <td style="border:1px solid #e1eaf1;">{{ $loanApplication->living_description ?: 'N/A' }}</td>
+                        </tr>
+                    @endif
+                    <tr>
+                        <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Loan Proposal</td>
+                        <td style="border:1px solid #e1eaf1;">{{ $loanApplication->loan_proposal ?? 'N/A' }}</td>
                     </tr>
                     <tr>
                         <td style="border:1px solid #e1eaf1;background:#f8fbfe;font-weight:700;">Risk Level</td>

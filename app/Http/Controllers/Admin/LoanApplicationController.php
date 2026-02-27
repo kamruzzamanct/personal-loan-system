@@ -136,28 +136,98 @@ class LoanApplicationController extends Controller
 
     public function approve(Request $request, LoanApplication $loanApplication): RedirectResponse
     {
+        return $this->updateStatus(
+            request: $request,
+            loanApplication: $loanApplication,
+            nextStatus: LoanApplicationStatus::Approved,
+        );
+    }
+
+    public function markUnderReview(Request $request, LoanApplication $loanApplication): RedirectResponse
+    {
+        return $this->updateStatus(
+            request: $request,
+            loanApplication: $loanApplication,
+            nextStatus: LoanApplicationStatus::UnderReview,
+        );
+    }
+
+    public function decline(Request $request, LoanApplication $loanApplication): RedirectResponse
+    {
+        return $this->updateStatus(
+            request: $request,
+            loanApplication: $loanApplication,
+            nextStatus: LoanApplicationStatus::Declined,
+        );
+    }
+
+    private function updateStatus(
+        Request $request,
+        LoanApplication $loanApplication,
+        LoanApplicationStatus $nextStatus,
+    ): RedirectResponse
+    {
         $this->authorize('approve', $loanApplication);
 
         $status = $loanApplication->status instanceof LoanApplicationStatus
             ? $loanApplication->status->value
             : (string) $loanApplication->status;
 
-        if ($status === LoanApplicationStatus::Approved->value) {
+        if ($status === $nextStatus->value) {
+            $message = $nextStatus === LoanApplicationStatus::Approved
+                ? 'Loan application is already approved.'
+                : "Loan application is already marked as {$this->statusLabel($nextStatus)}.";
+
             return redirect()
                 ->route('admin.loan-applications.show', $loanApplication)
-                ->with('success', 'Loan application is already approved.');
+                ->with('success', $message);
         }
 
-        $loanApplication->update([
-            'status' => LoanApplicationStatus::Approved->value,
-            'approved_at' => now(),
-            'approved_by_user_id' => $request->user()?->id,
-        ]);
+        if (
+            $status === LoanApplicationStatus::Approved->value
+            && $nextStatus !== LoanApplicationStatus::Approved
+        ) {
+            return redirect()
+                ->route('admin.loan-applications.show', $loanApplication)
+                ->withErrors([
+                    'status' => 'Approved applications cannot be moved to another status.',
+                ]);
+        }
 
-        SendLoanApprovedNotificationJob::dispatch($loanApplication->fresh());
+        $payload = [
+            'status' => $nextStatus->value,
+        ];
+
+        if ($nextStatus === LoanApplicationStatus::Approved) {
+            $payload['approved_at'] = now();
+            $payload['approved_by_user_id'] = $request->user()?->id;
+        } else {
+            $payload['approved_at'] = null;
+            $payload['approved_by_user_id'] = null;
+        }
+
+        $loanApplication->update($payload);
+
+        if ($nextStatus === LoanApplicationStatus::Approved) {
+            SendLoanApprovedNotificationJob::dispatch($loanApplication->fresh());
+
+            return redirect()
+                ->route('admin.loan-applications.show', $loanApplication)
+                ->with('success', 'Loan application approved successfully. Applicant notification is queued.');
+        }
 
         return redirect()
             ->route('admin.loan-applications.show', $loanApplication)
-            ->with('success', 'Loan application approved successfully. Applicant notification is queued.');
+            ->with('success', 'Loan application status updated to '.$this->statusLabel($nextStatus).'.');
+    }
+
+    private function statusLabel(LoanApplicationStatus $status): string
+    {
+        return match ($status) {
+            LoanApplicationStatus::Pending => 'pending',
+            LoanApplicationStatus::UnderReview => 'under review',
+            LoanApplicationStatus::Approved => 'approved',
+            LoanApplicationStatus::Declined => 'declined',
+        };
     }
 }
