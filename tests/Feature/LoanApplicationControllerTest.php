@@ -98,6 +98,37 @@ class LoanApplicationControllerTest extends TestCase
         Queue::assertPushed(SendHighRiskLoanNotificationJob::class, 1);
     }
 
+    public function test_store_persists_very_high_risk_application_and_dispatches_notification_job(): void
+    {
+        Queue::fake();
+
+        $response = $this->post(route('loan-applications.store'), [
+            'first_name' => 'Rehan',
+            'last_name' => 'Ali',
+            'email' => 'rehan@example.com',
+            'age' => 38,
+            'phone' => '1234567890',
+            'address' => '22 Grove Street, Denver',
+            'loan_amount' => 60000,
+            'employment_type' => 'self-employed',
+            'living_description' => 'Own and operate a delivery contracting business.',
+            'monthly_income' => 20000,
+            'loan_proposal' => 'Fleet purchase and working capital.',
+            'consent' => '1',
+        ]);
+
+        $response->assertRedirect(route('loan-applications.create'));
+        $response->assertSessionHas('success', 'Loan application submitted successfully.');
+
+        $this->assertDatabaseHas('loan_applications', [
+            'email' => 'rehan@example.com',
+            'risk_level' => RiskLevel::VeryHigh->value,
+            'is_self_employed' => true,
+        ]);
+
+        Queue::assertPushed(SendHighRiskLoanNotificationJob::class, 1);
+    }
+
     public function test_store_returns_json_created_response_for_json_requests(): void
     {
         Queue::fake();

@@ -20,8 +20,24 @@ class DashboardController extends Controller
         $summary = LoanApplication::query()
             ->selectRaw('COUNT(*) as total_applications')
             ->selectRaw(
-                'SUM(CASE WHEN risk_level = ? THEN 1 ELSE 0 END) as high_risk_applications',
+                'SUM(CASE WHEN risk_level IN (?, ?) THEN 1 ELSE 0 END) as high_risk_applications',
+                [RiskLevel::High->value, RiskLevel::VeryHigh->value],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN risk_level = ? THEN 1 ELSE 0 END) as high_only_risk_applications',
                 [RiskLevel::High->value],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN risk_level = ? THEN 1 ELSE 0 END) as low_risk_applications',
+                [RiskLevel::Low->value],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN risk_level = ? THEN 1 ELSE 0 END) as medium_risk_applications',
+                [RiskLevel::Medium->value],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN risk_level = ? THEN 1 ELSE 0 END) as very_high_risk_applications',
+                [RiskLevel::VeryHigh->value],
             )
             ->selectRaw(
                 'SUM(CASE WHEN employment_type = ? THEN 1 ELSE 0 END) as salaried_applications',
@@ -40,6 +56,10 @@ class DashboardController extends Controller
         $totalApplications = (int) ($summary?->total_applications ?? 0);
         $approvedLoans = (int) ($summary?->approved_loans ?? 0);
         $highRiskApplications = (int) ($summary?->high_risk_applications ?? 0);
+        $highOnlyRiskApplications = (int) ($summary?->high_only_risk_applications ?? 0);
+        $lowRiskApplications = (int) ($summary?->low_risk_applications ?? 0);
+        $mediumRiskApplications = (int) ($summary?->medium_risk_applications ?? 0);
+        $veryHighRiskApplications = (int) ($summary?->very_high_risk_applications ?? 0);
         $salariedApplications = (int) ($summary?->salaried_applications ?? 0);
         $selfEmployedApplications = (int) ($summary?->self_employed_applications ?? 0);
 
@@ -50,10 +70,12 @@ class DashboardController extends Controller
         $monthlyApplicationsChart = $this->monthlyApplicationsChart();
 
         $riskDistributionChart = [
-            'labels' => ['High Risk', 'Low Risk'],
+            'labels' => ['Low Risk', 'Medium Risk', 'High Risk', 'Very High Risk'],
             'series' => [
-                $highRiskApplications,
-                max($totalApplications - $highRiskApplications, 0),
+                $lowRiskApplications,
+                $mediumRiskApplications,
+                $highOnlyRiskApplications,
+                $veryHighRiskApplications,
             ],
         ];
 

@@ -60,12 +60,26 @@
                 @else
                     <ul class="admin-highrisk-list">
                         @foreach ($latestHighRiskApplications as $application)
+                            @php
+                                $riskLevel = $application->risk_level instanceof \BackedEnum
+                                    ? $application->risk_level->value
+                                    : (string) $application->risk_level;
+
+                                $riskClass = match ($riskLevel) {
+                                    'very_high' => 'risk-very-high',
+                                    'high' => 'risk-high',
+                                    'medium' => 'risk-medium',
+                                    default => 'risk-low',
+                                };
+                            @endphp
                             <li>
                                 <div>
                                     <strong>{{ $application->first_name }} {{ $application->last_name }}</strong>
                                     <small>{{ $application->email }}</small>
                                 </div>
-                                <span class="risk-pill risk-high">HIGH</span>
+                                <span class="risk-pill {{ $riskClass }}">
+                                    {{ strtoupper(str_replace('_', ' ', $riskLevel)) }}
+                                </span>
                             </li>
                         @endforeach
                     </ul>
@@ -84,7 +98,7 @@
 
             <article class="admin-card admin-chart-card">
                 <h2 class="admin-section-title">Risk Distribution</h2>
-                <p class="admin-muted">Current split of high-risk and low-risk applications.</p>
+                <p class="admin-muted">Current split across repayment-risk tiers.</p>
                 <div class="admin-chart-wrap">
                     <canvas id="riskDistributionChart" aria-label="Risk distribution chart" role="img"></canvas>
                 </div>
@@ -155,7 +169,7 @@
                         labels: riskChartData.labels,
                         datasets: [{
                             data: riskChartData.series,
-                            backgroundColor: ['#245a7c', '#a8c930'],
+                            backgroundColor: ['#a8c930', '#5ba9d6', '#245a7c', '#9e2435'],
                             borderColor: '#ffffff',
                             borderWidth: 2,
                         }],

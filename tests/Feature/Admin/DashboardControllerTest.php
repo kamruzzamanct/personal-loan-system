@@ -76,8 +76,8 @@ class DashboardControllerTest extends TestCase
                 && array_sum($chart['series']) === 4;
         });
         $response->assertViewHas('riskDistributionChart', function (array $chart): bool {
-            return $chart['labels'] === ['High Risk', 'Low Risk']
-                && $chart['series'] === [2, 2];
+            return $chart['labels'] === ['Low Risk', 'Medium Risk', 'High Risk', 'Very High Risk']
+                && $chart['series'] === [2, 0, 2, 0];
         });
     }
 
@@ -100,7 +100,7 @@ class DashboardControllerTest extends TestCase
                 && array_sum($chart['series']) === 0;
         });
         $response->assertViewHas('riskDistributionChart', function (array $chart): bool {
-            return $chart['series'] === [0, 0];
+            return $chart['series'] === [0, 0, 0, 0];
         });
     }
 

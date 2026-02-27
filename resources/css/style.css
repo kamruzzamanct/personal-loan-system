@@ -653,7 +653,7 @@ main {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 64px;
+    min-width: 92px;
     height: 24px;
     border-radius: 999px;
     font-size: 0.72rem;
@@ -664,6 +664,16 @@ main {
 .risk-high {
     background: #ffe7ea;
     color: #9e2435;
+}
+
+.risk-very-high {
+    background: #ffdadd;
+    color: #7f1120;
+}
+
+.risk-medium {
+    background: #e8f3fb;
+    color: #27577b;
 }
 
 .risk-low {
@@ -728,7 +738,7 @@ main {
     background: #fff4f6;
     color: #a12a39;
     border-radius: 10px;
-    min-height: 32px;
+    height: 42px;
     padding: 0 0.65rem;
     font: inherit;
     font-weight: 600;

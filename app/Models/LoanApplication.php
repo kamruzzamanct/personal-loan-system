@@ -75,12 +75,22 @@ class LoanApplication extends Model
 
     public function scopeHighRisk(Builder $query): Builder
     {
-        return $query->where('risk_level', RiskLevel::High->value);
+        return $query->whereIn('risk_level', RiskLevel::highRiskValues());
     }
 
     public function scopeLowRisk(Builder $query): Builder
     {
         return $query->where('risk_level', RiskLevel::Low->value);
+    }
+
+    public function scopeMediumRisk(Builder $query): Builder
+    {
+        return $query->where('risk_level', RiskLevel::Medium->value);
+    }
+
+    public function scopeVeryHighRisk(Builder $query): Builder
+    {
+        return $query->where('risk_level', RiskLevel::VeryHigh->value);
     }
 
     public function scopeSalaried(Builder $query): Builder

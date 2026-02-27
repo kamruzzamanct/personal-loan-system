@@ -76,11 +76,11 @@ class LoanApplicationController extends Controller
             $this->authorize('filter', LoanApplication::class);
         }
 
-        if ($riskLevel === RiskLevel::Low->value) {
+        if (in_array($riskLevel, [RiskLevel::Low->value, RiskLevel::Medium->value], true)) {
             $this->authorize('filter', LoanApplication::class);
         }
 
-        if ($riskLevel === RiskLevel::High->value) {
+        if (in_array($riskLevel, RiskLevel::highRiskValues(), true)) {
             $this->authorize('viewHighRisk', LoanApplication::class);
         }
     }
@@ -106,11 +106,8 @@ class LoanApplicationController extends Controller
             });
         }
 
-        if (in_array($riskLevel, [RiskLevel::High->value, RiskLevel::Low->value], true)) {
-            match ($riskLevel) {
-                RiskLevel::High->value => $query->highRisk(),
-                RiskLevel::Low->value => $query->lowRisk(),
-            };
+        if (in_array($riskLevel, array_map(static fn (RiskLevel $case): string => $case->value, RiskLevel::cases()), true)) {
+            $query->where('risk_level', $riskLevel);
         }
 
         if (in_array($employmentType, [EmploymentType::Salaried->value, EmploymentType::SelfEmployed->value], true)) {

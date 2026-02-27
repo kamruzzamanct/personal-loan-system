@@ -12,6 +12,13 @@
             ? $loanApplication->risk_level->value
             : (string) $loanApplication->risk_level;
 
+        $riskClass = match ($riskLevel) {
+            'very_high' => 'risk-very-high',
+            'high' => 'risk-high',
+            'medium' => 'risk-medium',
+            default => 'risk-low',
+        };
+
         $status = $loanApplication->status instanceof \BackedEnum
             ? $loanApplication->status->value
             : (string) $loanApplication->status;
@@ -110,8 +117,8 @@
                 <h2 class="admin-section-title">Review & Approval</h2>
 
                 <div class="admin-detail-badges">
-                    <span class="risk-pill {{ $riskLevel === 'high' ? 'risk-high' : 'risk-low' }}">
-                        Risk: {{ strtoupper($riskLevel) }}
+                    <span class="risk-pill {{ $riskClass }}">
+                        Risk: {{ strtoupper(str_replace('_', ' ', $riskLevel)) }}
                     </span>
                     <span class="status-pill {{ $statusClass }}">
                         Status: {{ strtoupper(str_replace('_', ' ', $status)) }}
@@ -129,7 +136,7 @@
                     </li>
                 </ul>
 
-                @if ($riskLevel === 'high')
+                @if (in_array($riskLevel, ['high', 'very_high'], true))
                     <p class="admin-note-high-risk">
                         This application is flagged as high risk and should be reviewed carefully before approval.
                     </p>

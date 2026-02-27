@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\EmploymentType;
-use App\Enums\RiskLevel;
 use App\Http\Requests\StoreLoanApplicationRequest;
 use App\Jobs\SendHighRiskLoanNotificationJob;
 use App\Models\LoanApplication;
@@ -53,7 +52,7 @@ class LoanApplicationController extends Controller
             'is_self_employed' => $loanRiskService->isSelfEmployed($validated['employment_type']),
         ]);
 
-        if ($riskLevel === RiskLevel::High->value) {
+        if ($loanRiskService->isHighRisk($riskLevel)) {
             SendHighRiskLoanNotificationJob::dispatch($loanApplication);
         }
 

@@ -26,7 +26,9 @@
                     <label for="risk_level">Risk Level</label>
                     <select id="risk_level" name="risk_level">
                         <option value="">All</option>
+                        <option value="very_high" @selected($filters['risk_level'] === 'very_high')>Very High</option>
                         <option value="high" @selected($filters['risk_level'] === 'high')>High</option>
+                        <option value="medium" @selected($filters['risk_level'] === 'medium')>Medium</option>
                         <option value="low" @selected($filters['risk_level'] === 'low')>Low</option>
                     </select>
                 </div>
@@ -89,6 +91,13 @@
                                     ? $loanApplication->risk_level->value
                                     : (string) $loanApplication->risk_level;
 
+                                $riskClass = match ($riskLevel) {
+                                    'very_high' => 'risk-very-high',
+                                    'high' => 'risk-high',
+                                    'medium' => 'risk-medium',
+                                    default => 'risk-low',
+                                };
+
                                 $status = $loanApplication->status instanceof \BackedEnum
                                     ? $loanApplication->status->value
                                     : (string) $loanApplication->status;
@@ -108,8 +117,8 @@
                                 <td>{{ number_format((float) $loanApplication->monthly_income, 2) }}</td>
                                 <td>{{ ucwords(str_replace('_', ' ', $employmentType)) }}</td>
                                 <td>
-                                    <span class="risk-pill {{ $riskLevel === 'high' ? 'risk-high' : 'risk-low' }}">
-                                        {{ strtoupper($riskLevel) }}
+                                    <span class="risk-pill {{ $riskClass }}">
+                                        {{ strtoupper(str_replace('_', ' ', $riskLevel)) }}
                                     </span>
                                 </td>
                                 <td>
