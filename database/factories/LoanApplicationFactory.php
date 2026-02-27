@@ -60,6 +60,9 @@ class LoanApplicationFactory extends Factory
             'status' => LoanApplicationStatus::Pending->value,
             'approved_at' => null,
             'approved_by_user_id' => null,
+            'assigned_to_user_id' => null,
+            'assigned_by_user_id' => null,
+            'assigned_at' => null,
         ];
     }
 }

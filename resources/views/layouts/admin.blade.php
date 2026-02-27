@@ -61,10 +61,6 @@
                         <span>Users</span>
                     </a>
                 @endcan
-                <a href="{{ route('loan-applications.create') }}" class="admin-menu-link">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10.01 10.01 0 0 0 12 2Zm1 5v4h4v2h-4v4h-2v-4H7v-2h4V7Z"/></svg>
-                    <span>New Application</span>
-                </a>
                 <a href="{{ route('home') }}" class="admin-menu-link">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 11h2v10h6v-6h4v6h6V11h2L12 3Zm-1 16H6v-7.5L11 7v12Zm7 0h-5V7l5 4.5V19Z"/></svg>
                     <span>Public Site</span>

@@ -58,6 +58,8 @@ Route::prefix('admin')
             Route::post('/loan-applications/{loanApplication}/decline', [AdminLoanApplicationController::class, 'decline'])
                 ->middleware('permission:approve applications')
                 ->name('loan-applications.decline');
+            Route::post('/loan-applications/{loanApplication}/assign', [AdminLoanApplicationController::class, 'assign'])
+                ->name('loan-applications.assign');
             Route::resource('/users', AdminUserController::class)
                 ->except(['show'])
                 ->middleware('permission:manage users');

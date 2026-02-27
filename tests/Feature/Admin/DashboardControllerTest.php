@@ -104,12 +104,48 @@ class DashboardControllerTest extends TestCase
         });
     }
 
+    public function test_risk_manager_dashboard_includes_only_assigned_applications(): void
+    {
+        $riskManager = $this->actingAsRiskManager();
+
+        LoanApplication::factory()->create([
+            'assigned_to_user_id' => $riskManager->id,
+            'risk_level' => RiskLevel::High->value,
+            'status' => LoanApplicationStatus::Approved->value,
+        ]);
+
+        LoanApplication::factory()->create([
+            'assigned_to_user_id' => null,
+            'risk_level' => RiskLevel::VeryHigh->value,
+            'status' => LoanApplicationStatus::Pending->value,
+        ]);
+
+        $response = $this->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertViewHas('totalApplications', 1);
+        $response->assertViewHas('approvedLoans', 1);
+        $response->assertViewHas('highRiskApplications', 1);
+    }
+
     private function actingAsAdmin(): User
     {
         $user = User::factory()->create([
             'role' => AdminRole::SuperAdmin->value,
         ]);
         $user->assignRole('Super Admin');
+
+        $this->actingAs($user, 'admin');
+
+        return $user;
+    }
+
+    private function actingAsRiskManager(): User
+    {
+        $user = User::factory()->create([
+            'role' => AdminRole::RiskManager->value,
+        ]);
+        $user->assignRole('Risk Manager');
 
         $this->actingAs($user, 'admin');
 

@@ -42,6 +42,9 @@ class LoanApplication extends Model
         'status',
         'approved_at',
         'approved_by_user_id',
+        'assigned_to_user_id',
+        'assigned_by_user_id',
+        'assigned_at',
     ];
 
     /**
@@ -60,12 +63,23 @@ class LoanApplication extends Model
             'is_self_employed' => 'boolean',
             'status' => LoanApplicationStatus::class,
             'approved_at' => 'datetime',
+            'assigned_at' => 'datetime',
         ];
     }
 
     public function approvedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
+
+    public function assignedToUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    public function assignedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by_user_id');
     }
 
     public function applicantUser(): BelongsTo

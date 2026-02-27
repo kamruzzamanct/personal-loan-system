@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AdminRole;
 use App\Enums\EmploymentType;
 use App\Enums\LoanApplicationStatus;
 use App\Enums\RiskLevel;
 use App\Exports\LoanApplicationsExport;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendLoanAssignmentNotificationJob;
 use App\Jobs\SendLoanApprovedNotificationJob;
 use App\Models\LoanApplication;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Excel as ExcelWriter;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -28,6 +33,7 @@ class LoanApplicationController extends Controller
         $filters = $this->filtersFromRequest($request);
 
         $loanApplications = $this->filteredQuery($request, $filters)
+            ->with('assignedToUser:id,name,email')
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -95,7 +101,7 @@ class LoanApplicationController extends Controller
         $search = $filters['search'];
         $riskLevel = $filters['risk_level'];
         $employmentType = $filters['employment_type'];
-        $query = LoanApplication::query();
+        $query = $this->baseVisibilityQuery($request);
 
         if ($search !== '') {
             $query->where(function (Builder $searchQuery) use ($search): void {
@@ -120,15 +126,58 @@ class LoanApplicationController extends Controller
         return $query;
     }
 
-    public function show(LoanApplication $loanApplication): View
+    public function show(Request $request, LoanApplication $loanApplication): View
     {
         $this->authorize('view', $loanApplication);
 
-        $loanApplication->loadMissing('approvedByUser');
+        $loanApplication->loadMissing(['approvedByUser', 'assignedToUser', 'assignedByUser']);
+
+        $riskManagers = collect();
+        $currentUser = $request->user();
+
+        if ($currentUser !== null && method_exists($currentUser, 'isSuperAdmin') && $currentUser->isSuperAdmin()) {
+            $riskManagers = User::query()
+                ->where('role', AdminRole::RiskManager->value)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+        }
 
         return view('admin.loan-applications.show', [
             'loanApplication' => $loanApplication,
+            'riskManagers' => $riskManagers,
         ]);
+    }
+
+    public function assign(Request $request, LoanApplication $loanApplication): RedirectResponse
+    {
+        $this->authorize('assign', $loanApplication);
+
+        $validated = $request->validate([
+            'risk_manager_user_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id')->where(
+                    static fn (QueryBuilder $query): QueryBuilder => $query->where('role', AdminRole::RiskManager->value),
+                ),
+            ],
+        ], [
+            'risk_manager_user_id.required' => 'Please select a risk manager.',
+            'risk_manager_user_id.exists' => 'Selected user is not a valid risk manager.',
+        ]);
+
+        $riskManager = User::query()->findOrFail((int) $validated['risk_manager_user_id']);
+
+        $loanApplication->update([
+            'assigned_to_user_id' => $riskManager->id,
+            'assigned_by_user_id' => $request->user()?->id,
+            'assigned_at' => now(),
+        ]);
+
+        SendLoanAssignmentNotificationJob::dispatch($loanApplication->fresh(), $riskManager);
+
+        return redirect()
+            ->route('admin.loan-applications.show', $loanApplication)
+            ->with('success', "Loan application assigned to {$riskManager->name}. Notification email is queued.");
     }
 
     public function approve(Request $request, LoanApplication $loanApplication): RedirectResponse
@@ -226,5 +275,17 @@ class LoanApplicationController extends Controller
             LoanApplicationStatus::Approved => 'approved',
             LoanApplicationStatus::Declined => 'declined',
         };
+    }
+
+    private function baseVisibilityQuery(Request $request): Builder
+    {
+        $query = LoanApplication::query();
+        $user = $request->user();
+
+        if ($user !== null && method_exists($user, 'isRiskManager') && $user->isRiskManager()) {
+            $query->where('assigned_to_user_id', $user->id);
+        }
+
+        return $query;
     }
 }

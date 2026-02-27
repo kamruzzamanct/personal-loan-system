@@ -649,6 +649,12 @@ main {
     gap: 0.55rem;
 }
 
+.admin-assign-form {
+    margin-top: 0.9rem;
+    display: grid;
+    gap: 0.6rem;
+}
+
 .risk-pill {
     display: inline-flex;
     align-items: center;

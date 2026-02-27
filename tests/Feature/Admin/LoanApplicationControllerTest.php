@@ -9,6 +9,7 @@ use App\Enums\AdminRole;
 use App\Enums\EmploymentType;
 use App\Enums\LoanApplicationStatus;
 use App\Enums\RiskLevel;
+use App\Jobs\SendLoanAssignmentNotificationJob;
 use App\Jobs\SendLoanApprovedNotificationJob;
 use App\Models\LoanApplication;
 use App\Models\User;
@@ -198,6 +199,7 @@ class LoanApplicationControllerTest extends TestCase
         $approver = $this->actingAsRiskManager();
 
         $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => $approver->id,
             'status' => LoanApplicationStatus::Pending->value,
             'approved_at' => null,
             'approved_by_user_id' => null,
@@ -234,9 +236,10 @@ class LoanApplicationControllerTest extends TestCase
 
     public function test_mark_under_review_updates_application_status(): void
     {
-        $this->actingAsRiskManager();
+        $riskManager = $this->actingAsRiskManager();
 
         $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => $riskManager->id,
             'status' => LoanApplicationStatus::Pending->value,
             'approved_at' => null,
             'approved_by_user_id' => null,
@@ -256,9 +259,10 @@ class LoanApplicationControllerTest extends TestCase
 
     public function test_decline_updates_application_status(): void
     {
-        $this->actingAsRiskManager();
+        $riskManager = $this->actingAsRiskManager();
 
         $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => $riskManager->id,
             'status' => LoanApplicationStatus::Pending->value,
             'approved_at' => null,
             'approved_by_user_id' => null,
@@ -324,9 +328,10 @@ class LoanApplicationControllerTest extends TestCase
     {
         Carbon::setTestNow('2026-02-26 14:05:06');
         Excel::fake();
-        $this->actingAsRiskManager();
+        $riskManager = $this->actingAsRiskManager();
 
         LoanApplication::factory()->create([
+            'assigned_to_user_id' => $riskManager->id,
             'risk_level' => RiskLevel::High->value,
             'email' => 'high-risk-export@example.com',
         ]);
@@ -394,6 +399,105 @@ class LoanApplicationControllerTest extends TestCase
         $response = $this->get(route('admin.loan-applications.export', [
             'format' => 'csv',
         ]));
+
+        $response->assertForbidden();
+    }
+
+    public function test_super_admin_can_assign_application_to_risk_manager_and_dispatch_notification_job(): void
+    {
+        Queue::fake();
+        $superAdmin = $this->actingAsAdmin();
+        $riskManager = User::factory()->create([
+            'role' => AdminRole::RiskManager->value,
+        ]);
+        $riskManager->assignRole('Risk Manager');
+
+        $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => null,
+            'assigned_by_user_id' => null,
+            'assigned_at' => null,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.assign', $loanApplication), [
+            'risk_manager_user_id' => $riskManager->id,
+        ]);
+
+        $response->assertRedirect(route('admin.loan-applications.show', $loanApplication));
+        $response->assertSessionHas('success', "Loan application assigned to {$riskManager->name}. Notification email is queued.");
+
+        $loanApplication->refresh();
+
+        $this->assertSame($riskManager->id, $loanApplication->assigned_to_user_id);
+        $this->assertSame($superAdmin->id, $loanApplication->assigned_by_user_id);
+        $this->assertNotNull($loanApplication->assigned_at);
+
+        Queue::assertPushed(SendLoanAssignmentNotificationJob::class, function (SendLoanAssignmentNotificationJob $job) use ($loanApplication, $riskManager): bool {
+            return $job->loanApplication->id === $loanApplication->id
+                && $job->riskManager->id === $riskManager->id;
+        });
+    }
+
+    public function test_risk_manager_index_shows_only_assigned_applications(): void
+    {
+        $riskManager = $this->actingAsRiskManager();
+
+        LoanApplication::factory()->create([
+            'email' => 'assigned@application.test',
+            'assigned_to_user_id' => $riskManager->id,
+        ]);
+
+        LoanApplication::factory()->create([
+            'email' => 'not-assigned@application.test',
+            'assigned_to_user_id' => null,
+        ]);
+
+        $response = $this->get(route('admin.loan-applications.index'));
+
+        $response->assertOk();
+        $response->assertSee('assigned@application.test');
+        $response->assertDontSee('not-assigned@application.test');
+    }
+
+    public function test_risk_manager_cannot_view_unassigned_application_details(): void
+    {
+        $this->actingAsRiskManager();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => null,
+        ]);
+
+        $response = $this->get(route('admin.loan-applications.show', $loanApplication));
+
+        $response->assertForbidden();
+    }
+
+    public function test_risk_manager_cannot_change_status_for_unassigned_application(): void
+    {
+        $this->actingAsRiskManager();
+
+        $loanApplication = LoanApplication::factory()->create([
+            'assigned_to_user_id' => null,
+            'status' => LoanApplicationStatus::Pending->value,
+        ]);
+
+        $response = $this->post(route('admin.loan-applications.under-review', $loanApplication));
+
+        $response->assertForbidden();
+    }
+
+    public function test_non_super_admin_cannot_assign_application(): void
+    {
+        $this->actingAsRiskManager();
+        $riskManager = User::factory()->create([
+            'role' => AdminRole::RiskManager->value,
+        ]);
+        $riskManager->assignRole('Risk Manager');
+
+        $loanApplication = LoanApplication::factory()->create();
+
+        $response = $this->post(route('admin.loan-applications.assign', $loanApplication), [
+            'risk_manager_user_id' => $riskManager->id,
+        ]);
 
         $response->assertForbidden();
     }

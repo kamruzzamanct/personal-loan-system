@@ -17,7 +17,9 @@ class DashboardController extends Controller
 {
     public function index(Request $request): View
     {
-        $summary = LoanApplication::query()
+        $baseQuery = $this->baseVisibilityQuery($request);
+
+        $summary = (clone $baseQuery)
             ->selectRaw('COUNT(*) as total_applications')
             ->selectRaw(
                 'SUM(CASE WHEN risk_level IN (?, ?) THEN 1 ELSE 0 END) as high_risk_applications',
@@ -67,7 +69,7 @@ class DashboardController extends Controller
             ? round(($highRiskApplications / $totalApplications) * 100, 2)
             : 0.0;
 
-        $monthlyApplicationsChart = $this->monthlyApplicationsChart();
+        $monthlyApplicationsChart = $this->monthlyApplicationsChart($baseQuery);
 
         $riskDistributionChart = [
             'labels' => ['Low Risk', 'Medium Risk', 'High Risk', 'Very High Risk'],
@@ -79,7 +81,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        $latestHighRiskApplications = LoanApplication::query()
+        $latestHighRiskApplications = (clone $baseQuery)
             ->highRisk()
             ->latest()
             ->take(5)
@@ -102,7 +104,7 @@ class DashboardController extends Controller
     /**
      * @return array{labels: list<string>, series: list<int>}
      */
-    private function monthlyApplicationsChart(): array
+    private function monthlyApplicationsChart(\Illuminate\Database\Eloquent\Builder $baseQuery): array
     {
         $startMonth = now()->startOfMonth()->subMonths(11);
         $endMonth = now()->startOfMonth();
@@ -112,7 +114,7 @@ class DashboardController extends Controller
             default => "DATE_FORMAT(created_at, '%Y-%m')",
         };
 
-        $monthlyRows = LoanApplication::query()
+        $monthlyRows = (clone $baseQuery)
             ->selectRaw("{$monthExpression} as month_key")
             ->selectRaw('COUNT(*) as applications_count')
             ->where('created_at', '>=', $startMonth)
@@ -136,5 +138,17 @@ class DashboardController extends Controller
             'labels' => $labels,
             'series' => $series,
         ];
+    }
+
+    private function baseVisibilityQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = LoanApplication::query();
+        $user = $request->user();
+
+        if ($user !== null && method_exists($user, 'isRiskManager') && $user->isRiskManager()) {
+            $query->where('assigned_to_user_id', $user->id);
+        }
+
+        return $query;
     }
 }

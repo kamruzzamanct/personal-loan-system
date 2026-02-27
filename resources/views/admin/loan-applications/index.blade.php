@@ -76,6 +76,7 @@
                             <th>Employment</th>
                             <th>Risk</th>
                             <th>Status</th>
+                            <th>Assigned To</th>
                             <th>Submitted</th>
                             <th>Actions</th>
                         </tr>
@@ -126,6 +127,7 @@
                                         {{ strtoupper(str_replace('_', ' ', $status)) }}
                                     </span>
                                 </td>
+                                <td>{{ $loanApplication->assignedToUser?->name ?? 'Unassigned' }}</td>
                                 <td>{{ $loanApplication->created_at?->format('Y-m-d H:i') }}</td>
                                 <td>
                                     <a href="{{ route('admin.loan-applications.show', $loanApplication) }}" class="table-action-link">
@@ -135,7 +137,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="admin-empty">No applications found for the selected filters.</td>
+                                <td colspan="11" class="admin-empty">No applications found for the selected filters.</td>
                             </tr>
                         @endforelse
                     </tbody>

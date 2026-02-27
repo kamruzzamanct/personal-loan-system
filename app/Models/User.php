@@ -64,4 +64,26 @@ class User extends Authenticatable
 
         return in_array($roleValue, AdminRole::adminValues(), true);
     }
+
+    public function isSuperAdmin(): bool
+    {
+        if ($this->hasRole('Super Admin')) {
+            return true;
+        }
+
+        $roleValue = $this->role instanceof AdminRole ? $this->role->value : (string) $this->role;
+
+        return $roleValue === AdminRole::SuperAdmin->value;
+    }
+
+    public function isRiskManager(): bool
+    {
+        if ($this->hasRole('Risk Manager')) {
+            return true;
+        }
+
+        $roleValue = $this->role instanceof AdminRole ? $this->role->value : (string) $this->role;
+
+        return $roleValue === AdminRole::RiskManager->value;
+    }
 }

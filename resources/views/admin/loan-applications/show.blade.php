@@ -29,6 +29,9 @@
             'declined' => 'status-declined',
             default => 'status-pending',
         };
+
+        $adminUser = auth('admin')->user();
+        $isSuperAdmin = $adminUser && method_exists($adminUser, 'isSuperAdmin') && $adminUser->isSuperAdmin();
     @endphp
 
     <section class="admin-page">
@@ -134,6 +137,18 @@
                         <span>Approved By</span>
                         <strong>{{ $loanApplication->approvedByUser?->name ?? 'Not assigned' }}</strong>
                     </li>
+                    <li>
+                        <span>Assigned To</span>
+                        <strong>{{ $loanApplication->assignedToUser?->name ?? 'Unassigned' }}</strong>
+                    </li>
+                    <li>
+                        <span>Assigned At</span>
+                        <strong>{{ $loanApplication->assigned_at?->format('Y-m-d H:i') ?? 'Not assigned yet' }}</strong>
+                    </li>
+                    <li>
+                        <span>Assigned By</span>
+                        <strong>{{ $loanApplication->assignedByUser?->name ?? 'Not assigned' }}</strong>
+                    </li>
                 </ul>
 
                 @if (in_array($riskLevel, ['high', 'very_high'], true))
@@ -144,6 +159,28 @@
 
                 @if ($errors->has('status'))
                     <div class="alert alert-error">{{ $errors->first('status') }}</div>
+                @endif
+
+                @if ($errors->has('risk_manager_user_id'))
+                    <div class="alert alert-error">{{ $errors->first('risk_manager_user_id') }}</div>
+                @endif
+
+                @if ($isSuperAdmin)
+                    <form action="{{ route('admin.loan-applications.assign', $loanApplication) }}" method="POST" class="admin-assign-form">
+                        @csrf
+                        <div class="field">
+                            <label for="risk_manager_user_id">Assign to Risk Manager</label>
+                            <select id="risk_manager_user_id" name="risk_manager_user_id" required>
+                                <option value="">Select risk manager</option>
+                                @foreach ($riskManagers as $riskManager)
+                                    <option value="{{ $riskManager->id }}" @selected((string) old('risk_manager_user_id', (string) $loanApplication->assigned_to_user_id) === (string) $riskManager->id)>
+                                        {{ $riskManager->name }} ({{ $riskManager->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-secondary">Assign Application</button>
+                    </form>
                 @endif
 
                 @can('approve applications')
